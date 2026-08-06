@@ -35,12 +35,10 @@ log_level = getattr(
 )
 
 
-api_version = os.getenv("API_VERSION")
-
-if api_version is None:
-    raise ValueError(
-        "API_VERSION environment variable tanımlı değil."
-    )
+api_version = os.getenv(
+    "API_VERSION",
+    "1.0.0",
+)
 
 
 logging.basicConfig(
