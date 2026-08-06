@@ -23,12 +23,10 @@ from app.services.prediction_service import (
 load_dotenv()
 
 
-log_level_name = os.getenv("LOG_LEVEL")
-
-if log_level_name is None:
-    raise ValueError(
-        "LOG_LEVEL environment variable tanımlı değil."
-    )
+log_level_name = os.getenv(
+    "LOG_LEVEL",
+    "INFO",
+).upper()
 
 log_level = getattr(
     logging,
