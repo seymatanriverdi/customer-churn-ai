@@ -1,0 +1,74 @@
+apiVersion: v1
+kind: Pod
+
+metadata:
+  name: load-generator
+  namespace: customer-churn-ai
+
+spec:
+  restartPolicy: Never
+
+  containers:
+    - name: load-generator
+      image: seymat/customer-churn-ai:1.0.2
+      imagePullPolicy: IfNotPresent
+
+      command:
+        - python
+        - -c
+        - |
+          import json
+          import threading
+          import urllib.request
+
+          url = "http://customer-churn-service:8000/predict"
+
+          payload = json.dumps({
+              "tenure_months": 2,
+              "monthly_charges": 95.0,
+              "contract_type": "month-to-month",
+              "has_internet_service": True,
+              "support_calls": 5
+          }).encode("utf-8")
+
+          headers = {
+              "Content-Type": "application/json"
+          }
+
+          def send_requests():
+              while True:
+                  request = urllib.request.Request(
+                      url,
+                      data=payload,
+                      headers=headers,
+                      method="POST"
+                  )
+
+                  try:
+                      with urllib.request.urlopen(
+                          request,
+                          timeout=10
+                      ) as response:
+                          response.read()
+                  except Exception:
+                      pass
+
+          threads = []
+
+          for _ in range(20):
+              thread = threading.Thread(
+                  target=send_requests
+              )
+              thread.start()
+              threads.append(thread)
+
+          for thread in threads:
+              thread.join()
+
+      resources:
+        requests:
+          cpu: "10m"
+          memory: "32Mi"
+        limits:
+          cpu: "500m"
+          memory: "128Mi"

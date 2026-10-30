@@ -1,0 +1,71 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: customer-churn-api
+  namespace: customer-churn-ai
+
+spec:
+  replicas: 2
+
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+
+  selector:
+    matchLabels:
+      app: customer-churn-api
+
+  template:
+    metadata:
+      labels:
+        app: customer-churn-api
+
+    spec:
+      containers:
+        - name: customer-churn-api
+          image: seymat/customer-churn-ai:1.0.3
+          imagePullPolicy: IfNotPresent
+
+          ports:
+            - containerPort: 8000
+
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "512Mi"
+            limits:
+              cpu: "1"
+              memory: "1Gi"
+
+          envFrom:
+            - configMapRef:
+                name: customer-churn-config
+
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 12
+
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8000
+            initialDelaySeconds: 3
+            periodSeconds: 10
+            timeoutSeconds: 10
+            failureThreshold: 3
+            successThreshold: 1

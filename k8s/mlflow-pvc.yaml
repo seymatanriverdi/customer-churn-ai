@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+
+metadata:
+  name: mlflow-storage-pvc
+  namespace: customer-churn-ai
+
+spec:
+  accessModes:
+    - ReadWriteOnce
+
+  storageClassName: hostpath
+
+  resources:
+    requests:
+      storage: 2Gi

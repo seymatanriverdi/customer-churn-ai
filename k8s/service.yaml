@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Service
+
+metadata:
+  name: customer-churn-service
+  namespace: customer-churn-ai
+  labels:
+    app: customer-churn-api
+
+spec:
+  selector:
+    app: customer-churn-api
+
+  ports:
+    - name: http
+      protocol: TCP
+      port: 8000
+      targetPort: 8000
+
+  type: ClusterIP
