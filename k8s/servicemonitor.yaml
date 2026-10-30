@@ -1,0 +1,19 @@
+﻿apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: customer-churn-api
+  namespace: customer-churn-ai
+  labels:
+    app: customer-churn-api
+spec:
+  selector:
+    matchLabels:
+      app: customer-churn-api
+  namespaceSelector:
+    matchNames:
+      - customer-churn-ai
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s
+      honorLabels: true

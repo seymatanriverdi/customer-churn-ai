@@ -1,5 +1,6 @@
 import logging
 import os
+from pathlib import Path
 
 import mlflow
 import mlflow.sklearn
@@ -97,8 +98,75 @@ class PredictionService:
         )
 
         # Champion alias'ına bağlı sklearn pipeline'ını yükler.
+                # Normal production ortamında Registry URI kullanılır.
+        model_load_uri = model_uri
+
+        # Docker image içine alınmış yerel MLflow artifact'ları
+        # kullanılacaksa bu değer ConfigMap'ten gelir.
+        local_artifact_root = os.getenv(
+            "LOCAL_MODEL_ARTIFACT_ROOT"
+        )
+
+        if local_artifact_root:
+            model_source = model_version_info.source
+            source_prefix = "models:/"
+
+            if (
+                model_source is None
+                or not model_source.startswith(
+                    source_prefix
+                )
+            ):
+                raise ValueError(
+                    "Beklenmeyen MLflow model source: "
+                    f"{model_source}"
+                )
+
+            # models:/m-abc... içinden logged model ID alınır.
+            logged_model_id = model_source[
+                len(source_prefix):
+            ]
+
+            # Experiment ID'yi sabitlemeden ilgili modeli arar.
+            artifact_candidates = list(
+                Path(
+                    local_artifact_root
+                ).glob(
+                    f"*/models/{logged_model_id}/artifacts"
+                )
+            )
+
+            if len(artifact_candidates) != 1:
+                raise FileNotFoundError(
+                    "Container içinde model artifact'ı "
+                    "tekil olarak bulunamadı. "
+                    f"Model ID: {logged_model_id} | "
+                    f"Bulunan yollar: {artifact_candidates}"
+                )
+
+            local_model_path = artifact_candidates[0]
+            mlmodel_path = (
+                local_model_path / "MLmodel"
+            )
+
+            if not mlmodel_path.is_file():
+                raise FileNotFoundError(
+                    "MLmodel dosyası bulunamadı: "
+                    f"{mlmodel_path}"
+                )
+
+            model_load_uri = str(
+                local_model_path
+            )
+
+            logger.info(
+                "Local container model artifact "
+                "is being used: %s",
+                model_load_uri,
+            )
+
         self.model = mlflow.sklearn.load_model(
-            model_uri
+            model_load_uri
         )
 
         logger.info(

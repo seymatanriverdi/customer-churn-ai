@@ -1,0 +1,17 @@
+﻿nodeExporter:
+  enabled: false
+alertmanager:
+  enabled: false
+grafana:
+  enabled: true
+prometheus:
+  prometheusSpec:
+    retention: 24h
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    resources:
+      requests:
+        cpu: 100m
+        memory: 400Mi
+      limits:
+        memory: 1Gi
