@@ -16,6 +16,7 @@ venv/
 # MLflow local data
 mlflow.db
 mlruns/
+mlartifacts/
 
 # IDE
 .vscode/

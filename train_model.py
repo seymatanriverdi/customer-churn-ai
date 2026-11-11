@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 import mlflow.sklearn
 import joblib
@@ -5,6 +6,7 @@ import mlflow
 import numpy as np
 import pandas as pd
 from sklearn.compose import ColumnTransformer
+from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (
     accuracy_score,
@@ -149,6 +151,21 @@ preprocessor = ColumnTransformer(
 )
 
 
+# DEĞİŞİKLİK 1: Algoritma ortam değişkeniyle seçilir.
+# MODEL_ALGORITHM verilmezse eskisi gibi Logistic Regression kullanılır.
+algorithm = os.getenv("MODEL_ALGORITHM", "logreg")
+
+if algorithm == "gbm":
+    estimator = GradientBoostingClassifier(random_state=42)
+    algorithm_name = "Gradient Boosting"
+else:
+    estimator = LogisticRegression(
+        max_iter=1_000,
+        random_state=42,
+    )
+    algorithm_name = "Logistic Regression"
+
+
 model_pipeline = Pipeline(
     steps=[
         (
@@ -157,10 +174,7 @@ model_pipeline = Pipeline(
         ),
         (
             "model",
-            LogisticRegression(
-                max_iter=1_000,
-                random_state=42,
-            ),
+            estimator,  # DEĞİŞİKLİK 2: sabit LogisticRegression yerine seçilen algoritma.
         ),
     ]
 )
@@ -186,14 +200,16 @@ mlflow.set_experiment(
 
 
 # Her çalıştırmada yeni bir MLflow Run oluşur.
+# DEĞİŞİKLİK 3: Run adı seçilen algoritmayı yansıtır.
 with mlflow.start_run(
-    run_name="Logistic Regression Baseline"
+    run_name=f"{algorithm_name} Baseline"
 ):
 
     # Parametreleri MLflow'a kaydediyoruz.
+    # DEĞİŞİKLİK 4: algoritma adı artık sabit metin değil.
     mlflow.log_param(
         "algorithm",
-        "Logistic Regression",
+        algorithm_name,
     )
 
     mlflow.log_param(
@@ -289,11 +305,11 @@ with mlflow.start_run(
     input_example = X_train.head(3)
 
     model_info = mlflow.sklearn.log_model(
-    sk_model=model_pipeline,
-    name="customer-churn-model",
-    input_example=input_example,
-    registered_model_name=registered_model_name,
-)
+        sk_model=model_pipeline,
+        name="customer-churn-model",
+        input_example=input_example,
+        registered_model_name=registered_model_name,
+    )
 
     print(
         "Registry model URI:",
